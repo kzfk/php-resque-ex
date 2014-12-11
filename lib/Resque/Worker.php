@@ -275,8 +275,12 @@ class Resque_Worker
         $startTime = microtime(true);
         try {
             Resque_Event::trigger('afterFork', $job);
-            $job->perform();
-            $this->log(array('message' => 'done ID:' . $job->payload['id'], 'data' => array('type' => 'done', 'job_id' => $job->payload['id'], 'time' => round(microtime(true) - $startTime, 3) * 1000)), self::LOG_TYPE_INFO);
+            $r = $job->perform();
+            if(!empty($job->payload['_resultcode']) && $job->payload['_resultcode'] > 0){
+                $this->log(array('message' => 'done ID:' . $job->payload['id'], 'data' => array('type' => 'done', 'job_id' => $job->payload['id'], 'time' => round(microtime(true) - $startTime, 3) * 1000)), self::LOG_TYPE_WARNING);
+            }else{
+                $this->log(array('message' => 'done ID:' . $job->payload['id'], 'data' => array('type' => 'done', 'job_id' => $job->payload['id'], 'time' => round(microtime(true) - $startTime, 3) * 1000)), self::LOG_TYPE_INFO);
+            }
         } catch (Exception $e) {
             $this->log(array('message' => $job . ' failed: ' . $e->getMessage(), 'data' => array('type' => 'fail', 'log' => $e->getMessage(), 'job_id' => $job->payload['id'], 'time' => round(microtime(true) - $startTime, 3) * 1000)), self::LOG_TYPE_ERROR);
             $job->fail($e);
